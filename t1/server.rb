@@ -1,22 +1,24 @@
 require "socket"
 
-PORT            = 3001          
-TAM_MSG_PRINT   = 1024          #Tamanho da mensagem que será mostrada no console
-HOSTNAME        = "localhost"    
-IP              = "127.0.0.1"   
+PORT      = 3001          
+MAX_LEN   = 1024          #Número máximo de bits que será recebido do socket
+HOSTNAME  = "localhost"    
+IP        = "127.0.0.1"   
 
 # Cria um servidor do tipo UDP
 server = UDPSocket.new
 server.bind(HOSTNAME, PORT)
 
-puts "Servidor conectado na porta #{PORT}, aguardando..."
+puts "Servidor conectado na porta #{PORT}, aguardando...\n"
 
 loop do 
-  message, sender = server.recvfrom(TAM_MSG_PRINT)
+  message, sender = server.recvfrom(MAX_LEN)
+  break if message.chomp == "0"
+
   ip = sender[3]
   puts "Host #{IP} enviou um pacote: #{message}"
-  break unless message.chomp != "0"
+  puts "Informações do remetende: #{sender}"
 end
 
-puts "Closing server."
+puts "Encerrando conexão..."
 server.close
