@@ -1,7 +1,7 @@
 require 'socket'
 
 PORT        = 3001
-HOSTNAME    = "localhost"
+HOSTNAME    = 'localhost'.freeze
 MSG_LENGHT  = 1024
 
 message = ''

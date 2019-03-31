@@ -1,24 +1,27 @@
-require "socket"
+require 'socket'
+require 'io/console'
 
 PORT        = 3001
-HOSTNAME    = "localhost"
+HOSTNAME    = 'localhost'.freeze
 MSG_LENGHT  = 1024
 
 client = UDPSocket.open
 client.connect(HOSTNAME, PORT)
 
 loop do
-  while true
-    puts "Digite sua mensagem (press [0] para parar):"
-    require 'io/console'
+  message = ''
+  loop do
+    puts 'Digite sua mensagem (press [0] para parar):'
+
     $stdin.iflush
     message = gets
     break if message.length <= MSG_LENGHT
   end
- 
-  client.sendmsg(message, 0) # O argumento 0 é uma flag que pode ser usada com uma combinação T> de constantes.
-  break unless !"0".include? message.chomp
+
+  # O argumento 0 é uma flag que pode ser usada com uma combinação T> de constantes.
+  client.sendmsg(message, 0)
+  break if '0'.include? message.chomp
 end
 
-puts "Conexão encerrada!"
+puts 'Conexão encerrada!'
 client.close
