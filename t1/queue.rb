@@ -1,3 +1,9 @@
 require 'socket'
 
-server = TCPServer.new 2000 # Server bound to port 2000
+PORT        = 3001
+HOSTNAME    = "localhost"
+MSG_LENGHT  = 1024
+
+message = ''
+client = UDPSocket.open
+client.connect(HOSTNAME, PORT)
