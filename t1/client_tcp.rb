@@ -1,8 +1,8 @@
 require 'socket'
 
 class Client
-  def initialize(socket)
-    puts 'HAH'
+  def initialize(socket, id)
+    @id = id
     @socket = socket
 
     @request_object = send_msg
@@ -14,7 +14,7 @@ class Client
 
   def send_msg
     @thr = Thread.new do
-      @socket.puts '2'
+      @socket.puts @id
       message = $stdin.gets.chomp
       @socket.puts message
     end
@@ -31,5 +31,7 @@ class Client
   end
 end
 
+id = ARGV[0]
+
 socket = TCPSocket.open('localhost', 8080)
-Client.new(socket)
+Client.new(socket, id)
