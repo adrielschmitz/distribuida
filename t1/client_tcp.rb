@@ -1,26 +1,35 @@
 require 'socket'
-require 'io/console'
 
-PORT        = 8081
-HOSTNAME    = 'localhost'.freeze
-MSG_LENGHT  = 1024
-ID          = 1
-TYPE_READ   = 0
-TYPE_WRITE  = 1
+class Client
+  def initialize(socket)
+    puts 'HAH'
+    @socket = socket
 
-hash = {}
+    @request_object = send_msg
+    @response_object = listen_response
 
-loop do
-  puts 'Digite sua mensagem (press [0] para parar):'
-  $stdin.iflush
-  message = gets
-  break if '0'.include? message.chomp
+    @request_object.join
+    @response_object.join
+  end
 
-  hash = { tp: 1, remetente: ID, destinatario: 0, message: message }
+  def send_msg
+    @thr = Thread.new do
+      @socket.puts '2'
+      message = $stdin.gets.chomp
+      @socket.puts message
+    end
+  end
 
-  TCPSocket.open(HOSTNAME, PORT) do |server|
-    server.write [
-      Marshal.dump(hash)
-    ].pack('A*')
+  def listen_response
+    Thread.new do
+      response = @socket.gets.chomp
+      puts "Resposta: #{response}"
+      @socket.close
+      Thread.kill(@thr)
+      Thread.kill(Thread.current)
+    end
   end
 end
+
+socket = TCPSocket.open('localhost', 8080)
+Client.new(socket)
