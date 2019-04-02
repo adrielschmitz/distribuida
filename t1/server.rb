@@ -1,35 +1,35 @@
 require 'socket'
-require 'pry'
+require './read_config'
 
 HOSTNAME = 'localhost'.freeze
 PORT1 = 8080
 PORT2 = 8081
 
 class Client
-  def initialize(socket, server, id)
-    @socket = socket
+  def initialize(server, id)
     @server = server
     @id = id
 
-    puts 'Servidor com id: ' + @id.to_s
+    @thr_recive   = recive_msg
+    @thr_send     = send_msg
+    @thr_input    = input
 
-    @response_object = recive_msg
-    @request_object = send_msg
-    @input_keyboard = input
     @entrada = []
     @saida = []
 
-    @response_object.join
-    @request_object.join
-    @input_keyboard.join
+    @thr_recive.join
+    @thr_send.join
+    @thr_input.join
   end
 
   def new_socket
-    if @id.zero?
-      TCPSocket.new(HOSTNAME, PORT2)
-    else
-      TCPSocket.new(HOSTNAME, PORT1)
-    end
+    r = ReadConfig.new
+    config = if @id.zero?
+               r.get_config(1)
+             else
+               r.get_config(0)
+             end
+    TCPSocket.new(config[0], config[1])
   rescue Errno::ECONNREFUSED
     nil
   end
@@ -41,10 +41,10 @@ class Client
           sleep 2
           next
         end
-        @socket = nil
-        @socket = new_socket while @socket.nil?
-        @socket.puts @saida.slice!(0)
-        @socket.close
+        socket = nil
+        socket = new_socket while socket.nil?
+        socket.puts @saida.slice!(0)
+        socket.close
       end
     end
   end
@@ -56,7 +56,6 @@ class Client
         conn = @server.accept
         Thread.start(conn) do |c|
           @entrada << c.gets.chomp
-          # puts @entrada
         end
       end
     end
@@ -66,14 +65,14 @@ class Client
     @thr2 = Thread.new do
       loop do
         menu
-        op = $stdin.gets.chomp.to_i
+        op = $stdin.gets.chomp
         case op
-        when 0
+        when '0'
           kill_threads
-        when 1
+        when '1'
           puts 'Informe a mensagem:'
           @saida << $stdin.gets.chomp
-        when 2
+        when '2'
           show
         else
           puts 'Informe apenas uma das opções acima!'
@@ -91,7 +90,9 @@ class Client
   end
 
   def show
+    puts '----------------------- MENSAGENS -----------------------'
     puts @entrada
+    puts '---------------------------------------------------------'
   end
 
   def kill_threads
@@ -101,5 +102,9 @@ class Client
   end
 end
 
-server = TCPServer.open(HOSTNAME, PORT1 + ARGV[0].to_i)
-Client.new(nil, server, ARGV[0].to_i)
+read = ReadConfig.new
+id = ARGV[0].to_i
+config = read.get_config(id)
+
+server = TCPServer.open(config[0], config[1])
+Client.new(server, id)
