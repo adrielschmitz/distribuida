@@ -1,15 +1,12 @@
 require 'socket'
 require './read_config'
 
-HOSTNAME = 'localhost'.freeze
-PORT1 = 8080
-PORT2 = 8081
-
 class Client
   def initialize(server, id)
     @server = server
     @id = id
 
+    print 'Inicializando ..'
     @thr_recive   = recive_msg
     @thr_send     = send_msg
     @thr_input    = input
@@ -35,6 +32,7 @@ class Client
   end
 
   def send_msg
+    print '.'
     @thr0 = Thread.new do
       loop do
         if @saida.nil? || @saida.empty?
@@ -50,7 +48,7 @@ class Client
   end
 
   def recive_msg
-    puts 'INICIALIZANDO'
+    print '.'
     @thr1 = Thread.new do
       loop do
         conn = @server.accept
@@ -62,6 +60,7 @@ class Client
   end
 
   def input
+    puts ''
     @thr2 = Thread.new do
       loop do
         menu
@@ -82,7 +81,7 @@ class Client
   end
 
   def menu
-    puts 'OPÇÃO:'
+    puts '------------------------- OPÇÕES ------------------------'
     puts '[1] Escrever mensagem'
     puts '[2] Listar mensagens'
     puts '[0] Sair'
@@ -100,6 +99,11 @@ class Client
     Thread.kill(@thr1)
     Thread.kill(@thr2)
   end
+end
+
+if ARGV.length != 1
+  puts 'Informe o ID do roteador!'
+  exit
 end
 
 read = ReadConfig.new
