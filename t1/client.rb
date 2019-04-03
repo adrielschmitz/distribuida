@@ -1,3 +1,8 @@
+# Trabalho parcial sobre modelo de comunicação
+# Alunos: Adriel Schmitz, Leonardo Werlang
+# Professor: Braulio Adriano de Melo
+# Disciplina: Computação Distribuída
+
 require 'socket'
 require './read_config'
 
@@ -27,8 +32,8 @@ class Client
                r.get_config(0)
              end
     TCPSocket.new(config[0], config[1])
-  rescue Errno::ECONNREFUSED
-    nil
+    rescue Errno::ECONNREFUSED
+      nil
   end
 
   def send_msg
@@ -81,7 +86,8 @@ class Client
   end
 
   def menu
-    puts '------------------------- OPÇÕES ------------------------'
+    puts "Cliente [#{@id}]"
+    puts '-------------- OPÇÕES --------------'
     puts '[1] Escrever mensagem'
     puts '[2] Listar mensagens'
     puts '[0] Sair'
@@ -106,9 +112,15 @@ if ARGV.length != 1
   exit
 end
 
+# Lê o aquivo de configuração
 read = ReadConfig.new
+
+# Lê o argumento informado pelo usuário
 id = ARGV[0].to_i
 config = read.get_config(id)
 
+# Inicia um servidor com os paramentros de ip e porta
 server = TCPServer.open(config[0], config[1])
+
+#Instancia o cliente com seu id
 Client.new(server, id)
