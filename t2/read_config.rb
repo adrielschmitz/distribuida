@@ -9,4 +9,8 @@ class ReadConfig
   def get_config(id)
     @data[id]
   end
+
+  def max_routers
+    @data.size
+  end
 end
