@@ -1,4 +1,4 @@
-# Trabalho parcial sobre modelo de comunicacao
+# Trabalho 2: Demonstracao de relogio relativo
 # Alunos: Adriel Schmitz, Leonardo Werlang
 # Professor: Braulio Adriano de Melo
 # Disciplina: Computacao Distribuida
@@ -78,6 +78,17 @@ class Client
     end
   end
 
+  def get_msg
+    system('clear')
+    puts 'Informe a mensagem:'
+    print '-> '
+    @saida << $stdin.gets.chomp
+    @estado[@id] += 1
+    system('clear')
+    puts 'Mensagem enviada'
+    sleep(1)
+  end
+
   def input
     @thr2 = Thread.new do
       loop do
@@ -87,11 +98,9 @@ class Client
         when '0'
           kill_threads
         when '1'
-          puts 'Informe a mensagem:'
-          @saida << $stdin.gets.chomp
-          @estado[@id] += 1
+          get_msg
         when '2'
-          show
+          show_msg
         when '3'
           show_states
         else
@@ -112,10 +121,10 @@ class Client
     print '-> '
   end
 
-  def show
+  def show_msg
     system('clear')
     puts '----------------------- MENSAGENS -----------------------'
-    puts @entrada
+    @entrada.select { |item| puts item[:mensagem] }
     puts '---------------------------------------------------------'
     print 'Pressione ENTER... '
     $stdin.gets
@@ -124,7 +133,9 @@ class Client
   def show_states
     system('clear')
     puts '------------------------ ESTADOS ------------------------'
-    @estado.each_with_index.map { |e, i| puts "[#{i}]: #{e}" }
+    @estado.each_with_index.map do |e, i|
+      puts "#{i == @id ? '→' : ' '} [#{i}]: #{e}" 
+    end
     puts '---------------------------------------------------------'
     print 'Pressione ENTER... '
     $stdin.gets
