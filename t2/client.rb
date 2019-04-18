@@ -5,9 +5,12 @@
 
 require 'socket'
 require './read_config'
+require_relative '../vendor/bundle/gems/tty-spinner-0.9.0/lib/tty-spinner'
 
 class Client
   def initialize(server, id, max_routers)
+    run_spinner('Configurando', 'Configuração completa')
+    sleep(0.5)
     @server = server
     @id = id
 
@@ -31,7 +34,6 @@ class Client
       @estado[i] = 0
       @pack_config << 'L'
     end
-    puts @pack_config
   end
 
   def new_socket
@@ -84,9 +86,8 @@ class Client
     print '-> '
     @saida << $stdin.gets.chomp
     @estado[@id] += 1
-    system('clear')
-    puts 'Mensagem enviada'
-    sleep(1)
+    run_spinner('Salvando mensagem', 'Mensagem salva! Pressione ENTER')
+    $stdin.gets
   end
 
   def input
@@ -122,7 +123,7 @@ class Client
   end
 
   def show_msg
-    system('clear')
+    run_spinner('Carregando mensagens', 'Mensagens carregadas!')
     puts '----------------------- MENSAGENS -----------------------'
     @entrada.select { |item| puts item[:mensagem] }
     puts '---------------------------------------------------------'
@@ -131,7 +132,7 @@ class Client
   end
 
   def show_states
-    system('clear')
+    run_spinner('Carregando estados', 'Estados carregados!')
     puts '------------------------ ESTADOS ------------------------'
     @estado.each_with_index.map do |e, i|
       puts "#{i == @id ? '→' : ' '} [#{i}]: #{e}" 
@@ -151,6 +152,17 @@ class Client
     temp = @entrada.last
     temp = temp[:estado]
     @estado = @estado.each_with_index.map { |v, i| v < temp[i] ? temp[i] : v }
+  end
+
+  def run_spinner(msg, success_msg)
+    system('clear')
+    spinner = TTY::Spinner.new('[:spinner] :message')
+    spinner.update(message: msg)
+    spinner.auto_spin
+    sleep(1)
+    spinner.update(message: '')
+    spinner.success(success_msg)
+    spinner.kill
   end
 end
 
