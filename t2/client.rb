@@ -9,7 +9,7 @@ require_relative '../vendor/bundle/gems/tty-spinner-0.9.0/lib/tty-spinner'
 
 class Client
   def initialize(server, id, max_routers)
-    run_spinner('Configurando', 'Configuração completa')
+    run_spinner('Configurando...', 'Configuração completa')
     sleep(0.5)
     @server = server
     @id = id
@@ -86,7 +86,7 @@ class Client
     print '-> '
     @saida << $stdin.gets.chomp
     @estado[@id] += 1
-    run_spinner('Salvando mensagem', 'Mensagem salva! Pressione ENTER')
+    run_spinner('Salvando mensagem...', 'Mensagem salva! Pressione ENTER para voltar')
     $stdin.gets
   end
 
@@ -104,11 +104,25 @@ class Client
           show_msg
         when '3'
           show_states
+        when '4'
+          show_regras
         else
           puts 'Informe apenas uma das opções acima!'
         end
       end
     end
+  end
+
+  def show_regras
+    run_spinner('Carregando regras...', 'Regras carregadas!')
+    puts '------------------------ Regras ------------------------'
+    puts "\tSomatório do estado do relógio:"
+    puts 'Usuário escreve uma mensagem'
+    puts 'Usuário envia uma mensagem'
+    puts 'Usuário recebe uma mensagem'
+    puts '---------------------------------------------------------'
+    print 'Pressione ENTER... '
+    $stdin.gets
   end
 
   def menu
@@ -118,12 +132,13 @@ class Client
     puts '[1] Escrever mensagem'
     puts '[2] Listar mensagens'
     puts '[3] Exibir estado'
+    puts '[4] Regras utilizadas'
     puts '[0] Sair'
     print '-> '
   end
 
   def show_msg
-    run_spinner('Carregando mensagens', 'Mensagens carregadas!')
+    run_spinner('Carregando mensagens...', 'Mensagens carregadas!')
     puts '----------------------- MENSAGENS -----------------------'
     @entrada.select { |item| puts item[:mensagem] }
     puts '---------------------------------------------------------'

@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 require 'monitor'
 require_relative '../../../tty-cursor-0.6.1/lib/tty-cursor'
 
