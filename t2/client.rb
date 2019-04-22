@@ -9,7 +9,7 @@ require_relative '../vendor/bundle/gems/tty-spinner-0.9.0/lib/tty-spinner'
 
 class Client
   def initialize(server, id, max_routers)
-    run_spinner('Configurando', 'Configuração completa')
+    run_spinner('Configurando...', 'Configuração completa')
     sleep(0.5)
     @server = server
     @id = id
@@ -86,7 +86,7 @@ class Client
     print '-> '
     @saida << $stdin.gets.chomp
     @estado[@id] += 1
-    run_spinner('Salvando mensagem', 'Mensagem salva! Pressione ENTER')
+    run_spinner('Salvando mensagem...', 'Mensagem salva! Pressione ENTER para voltar')
     $stdin.gets
   end
 
@@ -123,7 +123,7 @@ class Client
   end
 
   def show_msg
-    run_spinner('Carregando mensagens', 'Mensagens carregadas!')
+    run_spinner('Carregando mensagens...', 'Mensagens carregadas!')
     puts '----------------------- MENSAGENS -----------------------'
     @entrada.select { |item| puts item[:mensagem] }
     puts '---------------------------------------------------------'
