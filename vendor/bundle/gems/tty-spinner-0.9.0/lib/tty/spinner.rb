@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require 'monitor'
-require 'tty-cursor'
+require_relative '../../../tty-cursor-0.6.1/lib/tty-cursor'
 
 require_relative 'spinner/version'
 require_relative 'spinner/formats'
