@@ -113,18 +113,6 @@ class Client
     end
   end
 
-  def show_regras
-    run_spinner('Carregando regras...', 'Regras carregadas!')
-    puts '------------------------ Regras ------------------------'
-    puts "\tSomatório do estado do relógio:"
-    puts 'Usuário escreve uma mensagem'
-    puts 'Usuário envia uma mensagem'
-    puts 'Usuário recebe uma mensagem'
-    puts '---------------------------------------------------------'
-    print 'Pressione ENTER... '
-    $stdin.gets
-  end
-
   def menu
     system('clear')
     puts "Cliente [#{@id}]"
@@ -141,6 +129,18 @@ class Client
     run_spinner('Carregando mensagens...', 'Mensagens carregadas!')
     puts '----------------------- MENSAGENS -----------------------'
     @entrada.select { |item| puts item[:mensagem] }
+    puts '---------------------------------------------------------'
+    print 'Pressione ENTER... '
+    $stdin.gets
+  end
+  
+  def show_regras
+    run_spinner('Carregando regras...', 'Regras carregadas!')
+    puts '------------------------ Regras ------------------------'
+    puts "Somatorio do estado do relogio quando:"
+    puts '1) Usuário escreve uma mensagem'
+    puts '2) Usuário envia uma mensagem'
+    puts '3) Usuário recebe uma mensagem'
     puts '---------------------------------------------------------'
     print 'Pressione ENTER... '
     $stdin.gets
