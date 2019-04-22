@@ -104,11 +104,25 @@ class Client
           show_msg
         when '3'
           show_states
+        when '4'
+          show_regras
         else
           puts 'Informe apenas uma das opções acima!'
         end
       end
     end
+  end
+
+  def show_regras
+    run_spinner('Carregando regras...', 'Regras carregadas!')
+    puts '------------------------ Regras ------------------------'
+    puts "\tSomatório do estado do relógio:"
+    puts 'Usuário escreve uma mensagem'
+    puts 'Usuário envia uma mensagem'
+    puts 'Usuário recebe uma mensagem'
+    puts '---------------------------------------------------------'
+    print 'Pressione ENTER... '
+    $stdin.gets
   end
 
   def menu
@@ -118,6 +132,7 @@ class Client
     puts '[1] Escrever mensagem'
     puts '[2] Listar mensagens'
     puts '[3] Exibir estado'
+    puts '[4] Regras utilizadas'
     puts '[0] Sair'
     print '-> '
   end
