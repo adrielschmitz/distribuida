@@ -1,4 +1,4 @@
-# Trabalho 2: Demonstracao de relogio relativo
+# Trabalho 3: Sistema de acordo
 # Alunos: Adriel Schmitz, Leonardo Werlang
 # Professor: Braulio Adriano de Melo
 # Disciplina: Computacao Distribuida
@@ -11,8 +11,12 @@ class Client
   def initialize(server, id, max_routers)
     run_spinner('Configurando...', 'Configuração completa')
     sleep(0.5)
+    # variavel de stancia com as classes de leitura do arquivo de configuracao
+    @read = ReadConfig.new
+
     @server = server
     @id = id
+    @max_routers = max_routers
 
     @thr_recive   = recive_msg
     @thr_send     = send_msg
@@ -36,16 +40,15 @@ class Client
   end
 
   def new_socket(id)
-    r = ReadConfig.new
-    config = r.get_config(id.to_i)
+    config = @read.get_config(id.to_i)
     socket = TCPSocket.new(config[0], config[1])
     socket.puts @saida[0][:msg]
     @saida.slice!(0)
     socket.close
   rescue Errno::ECONNREFUSED
-    # Recoloca a mensagem na fila se nao conseguiu concetar com o servidor
+    # Recoloca a mensagem na fila se nao conseguiu conectar com o servidor destino
     temp = @saida.slice!(0)
-    @saida << temp
+    @saida.push(temp)
     nil
   end
 
@@ -56,6 +59,7 @@ class Client
           sleep 2
           next
         end
+
         new_socket(@saida[0][:router])
       end
     end
@@ -64,10 +68,11 @@ class Client
   def recive_msg
     @thr1 = Thread.new do
       loop do
-        conn = @server.accept
-        Thread.start(conn) do |c|
+        conection = @server.accept
+        Thread.start(conection) do |c|
           mensagem = c.gets.chomp
-          @entrada << { mensagem: mensagem }
+          id = c.gets
+          @entrada << { mensagem: mensagem, id: id }
         end
       end
     end
@@ -75,15 +80,19 @@ class Client
 
   def get_msg
     system('clear')
-    puts 'Informe o roteador: '
-    print '-> '
-    router = $stdin.gets.chomp
     puts 'Informe a mensagem:'
     print '-> '
     msg = $stdin.gets.chomp
+    broad_cast(msg)
     run_spinner('Salvando mensagem...', 'Mensagem salva! Pressione ENTER para voltar')
-    @saida << { router: router, msg: msg }
     $stdin.gets
+  end
+  
+  def broad_cast(msg)
+    for i in 0..@max_routers-1 do
+      @saida << { router: i, msg: msg, id: @id } if i != @id
+      # puts @saida
+    end
   end
 
   def input
@@ -111,6 +120,8 @@ class Client
     puts '-------------- OPÇÕES --------------'
     puts '[1] Escrever mensagem'
     puts '[2] Listar mensagens'
+    # Aqui sera mostrado o estado de todos os clientes, se tem faltoso e se vai ter acordo
+    puts '[3] Mostrar situação do Acordo'
     puts '[0] Sair'
     print '-> '
   end
@@ -118,7 +129,7 @@ class Client
   def show_msg
     run_spinner('Carregando mensagens...', 'Mensagens carregadas!')
     puts '----------------------- MENSAGENS -----------------------'
-    @entrada.select { |item| puts item[:mensagem] }
+    @entrada.select { |item| puts "[#{item[:id]}] #{item[:mensagem]}" }
     puts '---------------------------------------------------------'
     print 'Pressione ENTER... '
     $stdin.gets
@@ -152,6 +163,7 @@ read = ReadConfig.new
 
 # Le o argumento informado pelo usuario
 id = ARGV[0].to_i
+
 config = read.get_config(id)
 
 # Inicia um servidor com os paramentros de ip e porta
