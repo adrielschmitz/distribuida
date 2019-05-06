@@ -52,6 +52,24 @@ class Client
     nil
   end
 
+  def recive_msg
+    @flag = true
+    @thr1 = Thread.new do
+      loop do
+        conection = @server.accept
+        Thread.start(conection) do |c|
+          mensagem = c.gets.chomp
+          @entrada << { mensagem: mensagem, id: @id }
+          if @flag && !mensagem.nil?
+            @flag = false
+            process_msg(mensagem)
+          end
+        end
+        sleep(2)
+      end
+    end
+  end
+
   def send_msg
     @thr0 = Thread.new do
       loop do
@@ -65,43 +83,24 @@ class Client
     end
   end
 
-  def recive_msg
-    @flag = true
-    @thr1 = Thread.new do
-      loop do
-        conection = @server.accept
-        Thread.start(conection) do |c|
-          mensagem = c.gets.chomp
-          # id = c.gets
-          @entrada << { mensagem: mensagem, id: @id }
-          if @flag && !mensagem.nil?
-            @flag = false
-            process_msg(mensagem)
-          end
-        end
-        sleep(2)
+  # Funcao que pode alterar ou nao a mensagem recebida
+  def process_msg(msg)
+    r = Random.new
+    for i in 0..@max_routers-1 do
+      n = r.rand(10)
+      if n < 8
+        set_output(i, msg) if i != @id
+        puts msg if i != @id
+      else
+        set_output(i, 'Me corrompi, desculpa') if i != @id
+        puts 'Me corrompi, desculpa' if i != @id
       end
     end
-  end
-
-  # Funcao que pode alterar a mensagem recebida
-  def process_msg(mensagem)
-    n = Random.new
-    if n.rand(100) <= 80
-      broad_cast(mensagem)
-      puts mensagem
-    else
-      broad_cast('Me corrompi, desculpa')
-      puts 'Me corrompi, desculpa'
-    end
-  end
-
-  def broad_cast(msg)
-    for i in 0..@max_routers-1 do
-      @saida << { router: i, msg: msg, id: @id } if i != @id
-      # puts @saida
-    end
     @flag = true
+  end
+
+  def set_output(router, msg)
+    @saida << { router: router, msg: msg, id: @id }
   end
 
   def get_msg
@@ -109,7 +108,7 @@ class Client
     puts 'Informe a mensagem:'
     print '-> '
     msg = $stdin.gets.chomp
-    broad_cast(msg)
+    process_msg(msg)
     run_spinner('Salvando mensagem...', 'Mensagem salva! Pressione ENTER para voltar')
     $stdin.gets
   end
