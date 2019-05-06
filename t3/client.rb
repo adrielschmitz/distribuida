@@ -66,16 +66,42 @@ class Client
   end
 
   def recive_msg
+    @flag = true
     @thr1 = Thread.new do
       loop do
         conection = @server.accept
         Thread.start(conection) do |c|
           mensagem = c.gets.chomp
-          id = c.gets
-          @entrada << { mensagem: mensagem, id: id }
+          # id = c.gets
+          @entrada << { mensagem: mensagem, id: @id }
+          if @flag && !mensagem.nil?
+            @flag = false
+            process_msg(mensagem)
+          end
         end
+        sleep(2)
       end
     end
+  end
+
+  # Funcao que pode alterar a mensagem recebida
+  def process_msg(mensagem)
+    n = Random.new
+    if n.rand(100) <= 80
+      broad_cast(mensagem)
+      puts mensagem
+    else
+      broad_cast('Me corrompi, desculpa')
+      puts 'Me corrompi, desculpa'
+    end
+  end
+
+  def broad_cast(msg)
+    for i in 0..@max_routers-1 do
+      @saida << { router: i, msg: msg, id: @id } if i != @id
+      # puts @saida
+    end
+    @flag = true
   end
 
   def get_msg
@@ -86,13 +112,6 @@ class Client
     broad_cast(msg)
     run_spinner('Salvando mensagem...', 'Mensagem salva! Pressione ENTER para voltar')
     $stdin.gets
-  end
-  
-  def broad_cast(msg)
-    for i in 0..@max_routers-1 do
-      @saida << { router: i, msg: msg, id: @id } if i != @id
-      # puts @saida
-    end
   end
 
   def input
