@@ -1,10 +1,9 @@
 class ReadConfig
+  attr_reader :routers_number, :routers, :hash_size
   def initialize
     file = File.read('config.txt')
-    @data = file.split(/\n/).map { |x| x.split(' ') }
-  end
-
-  def get_config(id)
-    @data[id]
+    @routers = file.split(/\n/).map { |x| x.split(' ') }
+    @routers_number = @routers.length
+    @hash_size = 3
   end
 end

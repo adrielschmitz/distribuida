@@ -1,61 +1,57 @@
-# Trabalho parcial sobre modelo de comunicação
+# Trabalho 04 | Distribuid Hash Table
 # Alunos: Adriel Schmitz, Leonardo Werlang
 # Professor: Braulio Adriano de Melo
-# Disciplina: Computação Distribuída
+# Disciplina: Computacao Distribuida
 
 require 'socket'
+require 'pry'
 require './read_config'
+require './routing_table'
 
 class Client
-  def initialize(server, id)
-    @server = server
+  attr_reader :id, :hash, :config, :routing_table
+  def initialize(id)
     @id = id
+    @config = ReadConfig.new
+    @routing_table = RoutingTable.new(id)
+    initialize_hash
 
-    @hash = { '0': {}, '1': {} }
-
-    print 'Inicializando ..'
-    @thr_recive = recive_msg
+    @thr_receive = receive_msg
     input
-
-    @thr_recive.join
+    @thr_receive.join
   end
 
-  def new_socket
-    r = ReadConfig.new
-    config = if @id.zero?
-               r.get_config(1)
-             else
-               r.get_config(0)
-             end
-    TCPSocket.new(config[0], config[1])
-  rescue Errno::ECONNREFUSED
-    nil
-  end
-
-  def send_msg
-    hash = { um: 1, dois: 2, tres: 3 }
-    TCPSocket.open('localhost', 8081) do |server|
-      server.write [
-        1,
-        'teste'.ljust(10),
-        Marshal.dump(hash)
-      ].pack('LA10A*')
+  def initialize_hash
+    @hash = {}
+    hash_range = (@config.hash_size * @id)..(@config.hash_size * @id + @config.hash_size - 1)
+    hash_range.each do |key|
+      @hash[key.to_s.to_sym] = {}
     end
   end
 
-  def recive_msg
+  def send_msg(key, value)
+    id = @routing_table.foresee_router(key)
+    ip = @config.routers[id.to_s.to_i][0]
+    port = @config.routers[id.to_s.to_i][1]
+    TCPSocket.open(ip, port) do |server|
+      server.write [
+        key.ljust(10),
+        value.ljust(30)
+      ].pack('A10A30')
+    end
+  end
+
+  def receive_msg
     @thr1 = Thread.new do
-      TCPServer.open('localhost', 8081) do |server|
+      ip = @config.routers[@id][0]
+      port = @config.routers[@id][1]
+      TCPServer.open(ip, port) do |server|
         loop do
           con = server.accept
-          rst = con.recv(1024).unpack('LA10A*')
-          fix = rst[0]
-          str = rst[1]
-
-          hash = Marshal.load(rst[2])
-          puts "#{fix.class}\t: #{fix}"
-          puts "#{str.class}\t: #{str}"
-          puts "#{hash.class}\t: #{hash}"
+          rst = con.recv(1024).unpack('A10A30')
+          key = rst[0]
+          value = rst[1]
+          assemble_hash(key, value)
           con.close
         end
       end
@@ -74,36 +70,55 @@ class Client
         key = $stdin.gets.chomp
         puts 'Informe a mensagem:'
         msg = $stdin.gets.chomp
-
         assemble_hash(key, msg)
-        
       when '2'
-        show
+        show_hash
+      when '3'
+      when '4'
+        @routing_table.print_table(@id)
       else
         puts 'Informe apenas uma das opções acima!'
       end
     end
   end
 
+  def assemble_index(key)
+    (key.to_i % 6).to_s.to_sym
+  end
+
   def assemble_hash(key, msg)
-    index = (key.to_i % 2)
-    
-    @hash[index.to_s.to_sym][key.to_s.to_sym] = msg
-    
-    puts @hash
+    index = assemble_index(key)
+
+    if @hash.key? index
+      @hash[index][key.to_s.to_sym] = msg
+    else
+      send_msg(key, msg)
+    end
   end
 
   def menu
     puts "Cliente [#{@id}]"
     puts '-------------- OPÇÕES --------------'
     puts '[1] Escrever mensagem'
-    puts '[2] Listar mensagens'
+    puts '[2] Mostar Hash'
     puts '[0] Sair'
     print '-> '
   end
 
   def kill_threads
     Thread.kill(@thr1)
+  end
+
+  def show_hash
+    puts '------------------------------------'
+    @hash.each do |key, sub_hash|
+      puts key.to_s + ':'
+      sub_hash.each do |sub_key, value|
+        puts '  ' + sub_key.to_s + ': ' + value.to_s
+      end
+      puts ''
+    end
+    puts '------------------------------------'
   end
 end
 
@@ -112,15 +127,7 @@ if ARGV.length != 1
   exit
 end
 
-# Lê o aquivo de configuração
-read = ReadConfig.new
-
-# Lê o argumento informado pelo usuário
 id = ARGV[0].to_i
-config = read.get_config(id)
-
-# Inicia um servidor com os paramentros de ip e porta
-server = TCPServer.open(config[0], config[1])
 
 # Instancia o cliente com seu id
-Client.new(server, id)
+Client.new(id)
