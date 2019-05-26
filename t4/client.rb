@@ -11,6 +11,8 @@ class Client
     @server = server
     @id = id
 
+    @hash = { '0': {}, '1': {} }
+
     print 'Inicializando ..'
     @thr_recive = recive_msg
     input
@@ -68,14 +70,27 @@ class Client
       when '0'
         kill_threads
       when '1'
+        puts 'Informe a chave: '
+        key = $stdin.gets.chomp
         puts 'Informe a mensagem:'
-        send_msg
+        msg = $stdin.gets.chomp
+
+        assemble_hash(key, msg)
+        
       when '2'
         show
       else
         puts 'Informe apenas uma das opções acima!'
       end
     end
+  end
+
+  def assemble_hash(key, msg)
+    index = (key.to_i % 2)
+    
+    @hash[index.to_s.to_sym][key.to_s.to_sym] = msg
+    
+    puts @hash
   end
 
   def menu
