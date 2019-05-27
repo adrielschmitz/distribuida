@@ -38,8 +38,7 @@ class Client
   # Responsavel por enviar as mensagens, exibe mensagem de erro de conexao
   # se nao encontrar o servidor
   # send_router: roteador de onde partiu a mensagem
-  # controller: variavel resposavel pelo tipo de mensagem. 0: salvar mensagem, 1: buscar
-  # por chave, 2: enviar mensagem buscada
+  # controller: variavel resposavel pelo tipo de mensagem
   # key: chave para ser salva ou buscada
   # value: mensagem a ser salva ou mensagem de retorno de uma busca
   def send_msg(send_router, controller, key, value)
@@ -82,7 +81,10 @@ class Client
     end
   end
 
-  # Verifica se a mensagem é de busca, armazenamento ou exibicao
+  # Verifica se a mensagem e de busca, armazenamento ou exibicao
+  # 0: salvar mensagem
+  # 1: buscar por chave
+  # 2: exibir/enviar mensagem buscada
   def unpack_message(send_router, controller, key, value)
     if controller.to_i.zero?
       assemble_hash(key, value)
