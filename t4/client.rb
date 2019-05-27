@@ -45,6 +45,8 @@ class Client
         value.ljust(30)
       ].pack('LLA10A30')
     end
+  rescue Errno::ECONNREFUSED
+    puts 'Impossível se conectar com o servidor!'
   end
 
   def receive_msg
