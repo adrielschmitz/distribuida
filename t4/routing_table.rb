@@ -4,15 +4,21 @@ class RoutingTable
   attr_reader :table, :connections
   def initialize(id)
     @table = {}
-    @connections = [(id + 1) % 2]
+    @connections = find_connections(id)
     configure_table
   end
 
   def foresee_router(index)
-    router = find_bigger(index)
-    return router unless router.nil?
-
-    find_lower
+    bigger = -1
+    router = nil
+    @table.each do |key, value|
+      if (value.to_i > bigger) && index.to_i <= value.to_i
+        bigger = value.to_i
+        router = key
+      end
+    end
+    puts router
+    router
   end
 
   def print_table(id)
@@ -29,35 +35,22 @@ class RoutingTable
 
   private
 
-  def find_bigger(index)
-    bigger = -1
-    router = nil
-    @table.each do |key, value|
-      if (value.to_i > bigger) && value.to_i <= index.to_i
-        bigger = value.to_i
-        router = key
-      end
-    end
-    router
-  end
-
-  def find_lower
-    lower = 9_999_999_999
-    router = nil
-    @table.each do |key, value|
-      if lower > value
-        lower = value
-        router = key
-      end
-    end
-    router
-  end
-
   def configure_table
     config = ReadConfig.new
     @connections.each do |connection|
       hash_max_range = (config.hash_size * connection + config.hash_size - 1)
       @table[connection.to_s.to_sym] = hash_max_range
     end
+  end
+
+  def find_connections(id)
+    connections = []
+    file = File.read('connections.txt')
+    con = file.split(/\n/).map { |x| x.split(':') }
+    con.each do |_c0, c1|
+      connections << c1.split(',')
+    end
+    connections = connections[id]
+    connections.map(&:to_i)
   end
 end

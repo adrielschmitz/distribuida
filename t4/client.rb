@@ -30,7 +30,7 @@ class Client
   end
 
   def send_msg(key, value)
-    id = @routing_table.foresee_router(key)
+    id = @routing_table.foresee_router(assemble_index(key).to_s)
     ip = @config.routers[id.to_s.to_i][0]
     port = @config.routers[id.to_s.to_i][1]
     TCPSocket.open(ip, port) do |server|
@@ -66,14 +66,11 @@ class Client
       when '0'
         kill_threads
       when '1'
-        puts 'Informe a chave: '
-        key = $stdin.gets.chomp
-        puts 'Informe a mensagem:'
-        msg = $stdin.gets.chomp
-        assemble_hash(key, msg)
+        read_msg
       when '2'
         show_hash
       when '3'
+        find_key
       when '4'
         @routing_table.print_table(@id)
       else
@@ -82,8 +79,16 @@ class Client
     end
   end
 
+  def read_msg
+    puts 'Informe a chave: '
+    key = $stdin.gets.chomp
+    puts 'Informe a mensagem:'
+    msg = $stdin.gets.chomp
+    assemble_hash(key, msg)
+  end
+
   def assemble_index(key)
-    (key.to_i % 6).to_s.to_sym
+    (key.to_i % (@config.routers.size * @config.hash_size)).to_s.to_sym
   end
 
   def assemble_hash(key, msg)
@@ -95,6 +100,8 @@ class Client
       send_msg(key, msg)
     end
   end
+
+  def find_key; end
 
   def menu
     puts "Cliente [#{@id}]"
