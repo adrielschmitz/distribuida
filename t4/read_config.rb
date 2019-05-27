@@ -1,3 +1,4 @@
+# Classe responsavel pela configuracao do sistema
 class ReadConfig
   attr_reader :routers_number, :routers, :hash_size
   def initialize

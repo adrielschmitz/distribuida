@@ -1,5 +1,6 @@
 require './read_config'
 
+# Classe responsavel pela tabela de roteamento
 class RoutingTable
   attr_reader :table, :connections
   def initialize(id)
@@ -8,6 +9,7 @@ class RoutingTable
     configure_table
   end
 
+  # Encontra o roteador responsavel pela chave
   def foresee_router(index)
     lower = 4_611_686_018_427_387_902
     router = nil
@@ -20,6 +22,7 @@ class RoutingTable
     router
   end
 
+  # Mostra a tabela de roteamento
   def print_table(id)
     puts '+-------------------------------+'
     puts "|       Ruting Table[#{id}]         |"
@@ -34,6 +37,7 @@ class RoutingTable
 
   private
 
+  # Configura a tabela de roteamento
   def configure_table
     config = ReadConfig.new
     @connections.each do |connection|
@@ -42,6 +46,7 @@ class RoutingTable
     end
   end
 
+  # Busca as conexoes dos roteadores no arquivo
   def find_connections(id)
     connections = []
     file = File.read('connections.txt')
