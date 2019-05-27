@@ -21,6 +21,12 @@ class Client
     @thr_receive.join
   end
 
+  # Inicializa a hash
+  # Ex:
+  # {
+  #   '0': {}
+  #   '1': {}
+  # }
   def initialize_hash
     @hash = {}
     hash_range = (@config.hash_size * @id)..(@config.hash_size * @id + @config.hash_size - 1)
@@ -29,6 +35,12 @@ class Client
     end
   end
 
+  # Responsavel por enviar as mensagens, exibe mensagem de erro de conexao
+  # se nao encontrar o servidor
+  # send_router: roteador de onde partiu a mensagem
+  # controller: variavel resposavel pelo tipo de mensagem
+  # key: chave para ser salva ou buscada
+  # value: mensagem a ser salva ou mensagem de retorno de uma busca
   def send_msg(send_router, controller, key, value)
     id = if controller == 2
            send_router.to_i
@@ -45,8 +57,11 @@ class Client
         value.ljust(30)
       ].pack('LLA10A30')
     end
+  rescue Errno::ECONNREFUSED
+    puts 'Impossível se conectar com o servidor!'
   end
 
+  # Responsavel por receber as mensagens
   def receive_msg
     @thr1 = Thread.new do
       ip = @config.routers[@id][0]
@@ -66,6 +81,10 @@ class Client
     end
   end
 
+  # Verifica se a mensagem e de busca, armazenamento ou exibicao
+  # 0: salvar mensagem
+  # 1: buscar por chave
+  # 2: exibir/enviar mensagem buscada
   def unpack_message(send_router, controller, key, value)
     if controller.to_i.zero?
       assemble_hash(key, value)
@@ -76,6 +95,13 @@ class Client
     end
   end
 
+  # Fica esperando o usuario escolher uma opcao
+  # Menu
+  # [1] Escrever mensagem
+  # [2] Procurar chave
+  # [3] Mostar Hash
+  # [4] Mostar tabela de roteamento
+  # [0] Sair
   def input
     loop do
       menu
@@ -91,14 +117,13 @@ class Client
         show_hash
       when '4'
         @routing_table.print_table(@id)
-      when '5'
-        pry
       else
         puts 'Informe apenas uma das opções acima!'
       end
     end
   end
 
+  # Le a chave e a mensagem que sera salva
   def read_msg
     puts 'Informe a chave: '
     key = $stdin.gets.chomp
@@ -107,10 +132,13 @@ class Client
     assemble_hash(key, msg)
   end
 
+  # Encontra o hash para a chave
   def assemble_index(key)
     (key.to_i % (@config.routers.size * @config.hash_size)).to_s.to_sym
   end
 
+  # Armazena os dados se a chave faz parte da hash do cliente
+  # senao manda os dados para outro cliente
   def assemble_hash(key, msg)
     index = assemble_index(key)
 
@@ -121,12 +149,15 @@ class Client
     end
   end
 
+  # Le a chave que sera buscada
   def read_key
     puts 'Informe a chave: '
     key = $stdin.gets.chomp
     find_key(@id, key)
   end
 
+  # Procura a chave no proprio hash
+  # senao encontrar busca em outros clientes
   def find_key(send_router, key)
     index = assemble_index(key)
 
@@ -143,6 +174,8 @@ class Client
     end
   end
 
+  # Exibe a mensagem se ele mesmo requisitou a chave
+  # senao manda para o cliente que a requisitou
   def show_key_value(send_router, msg)
     if send_router.to_i == @id
       puts msg
