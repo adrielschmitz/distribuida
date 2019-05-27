@@ -29,15 +29,17 @@ class Client
     end
   end
 
-  def send_msg(key, value)
+  def send_msg(send_router, controller, key, value)
     id = @routing_table.foresee_router(assemble_index(key).to_s)
     ip = @config.routers[id.to_s.to_i][0]
     port = @config.routers[id.to_s.to_i][1]
     TCPSocket.open(ip, port) do |server|
       server.write [
+        send_router,
+        controller,
         key.ljust(10),
         value.ljust(30)
-      ].pack('A10A30')
+      ].pack('LLA10A30')
     end
   end
 
@@ -48,13 +50,25 @@ class Client
       TCPServer.open(ip, port) do |server|
         loop do
           con = server.accept
-          rst = con.recv(1024).unpack('A10A30')
-          key = rst[0]
-          value = rst[1]
-          assemble_hash(key, value)
+          rst = con.recv(1024).unpack('LLA10A30')
+          send_router = rst[0]
+          controller = rst[1]
+          key = rst[2]
+          value = rst[3]
+          unpack_message(send_router, controller, key, value)
           con.close
         end
       end
+    end
+  end
+
+  def unpack_message(send_router, controller, key, value)
+    if controller.to_i.zero?
+      assemble_hash(key, value)
+    elsif controller == 1
+      find_key(send_router, key)
+    elsif controller == 2
+      show_key_value(send_router, value)
     end
   end
 
@@ -68,9 +82,9 @@ class Client
       when '1'
         read_msg
       when '2'
-        show_hash
+        read_key
       when '3'
-        find_key
+        show_hash
       when '4'
         @routing_table.print_table(@id)
       else
@@ -97,17 +111,47 @@ class Client
     if @hash.key? index
       @hash[index][key.to_s.to_sym] = msg
     else
-      send_msg(key, msg)
+      send_msg(@id, 0, key, msg)
     end
   end
 
-  def find_key; end
+  def read_key
+    puts 'Informe a chave: '
+    key = $stdin.gets.chomp
+    find_key(@id, key)
+  end
+
+  def find_key(send_router, key)
+    index = assemble_index(key)
+
+    if @hash.key? index
+      if @hash[index].key? key.to_s.to_sym
+        msg = 'Chave: ' + key.to_s + '    Valor: ' + @hash[index][key.to_s.to_sym].to_s
+        show_key_value(send_router, msg)
+      else
+        show_key_value(send_router, 'Está chave não existe!')
+      end
+    else
+      # Mandar buscar em outros hashs
+      send_msg(send_router, 1, key, '')
+    end
+  end
+
+  def show_key_value(send_router, msg)
+    if send_router.to_i == @id
+      puts msg
+    else
+      send_msg(send_router, 2, '', msg)
+    end
+  end
 
   def menu
     puts "Cliente [#{@id}]"
     puts '-------------- OPÇÕES --------------'
     puts '[1] Escrever mensagem'
-    puts '[2] Mostar Hash'
+    puts '[2] Procurar chave'
+    puts '[3] Mostar Hash'
+    puts '[4] Mostar tabela de roteamento'
     puts '[0] Sair'
     print '-> '
   end

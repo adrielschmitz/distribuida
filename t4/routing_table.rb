@@ -17,7 +17,6 @@ class RoutingTable
         router = key
       end
     end
-    puts router
     router
   end
 
