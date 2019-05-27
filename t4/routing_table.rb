@@ -14,6 +14,7 @@ class RoutingTable
     lower = 4_611_686_018_427_387_902
     router = nil
     @table.each do |key, value|
+
       if (value.to_i < lower) && index.to_i <= value.to_i
         lower = value.to_i
         router = key
@@ -25,7 +26,7 @@ class RoutingTable
   # Mostra a tabela de roteamento
   def print_table(id)
     puts '+-------------------------------+'
-    puts "|       Ruting Table[#{id}]         |"
+    puts "|       Routing Table[#{id}]        |"
     puts '+-------------------------------+'
     puts '|   Routers     |   Max Index   |'
     puts '+-------------------------------+'

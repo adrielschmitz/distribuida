@@ -4,7 +4,6 @@
 # Disciplina: Computacao Distribuida
 
 require 'socket'
-require 'pry'
 require './read_config'
 require './routing_table'
 
@@ -163,7 +162,7 @@ class Client
 
     if @hash.key? index
       if @hash[index].key? key.to_s.to_sym
-        msg = 'Chave: ' + key.to_s + '    Valor: ' + @hash[index][key.to_s.to_sym].to_s
+        msg = "Chave: " + key.to_s + '    Valor: ' + @hash[index][key.to_s.to_sym].to_s
         show_key_value(send_router, msg)
       else
         show_key_value(send_router, 'Está chave não existe!')
@@ -178,9 +177,9 @@ class Client
   # senao manda para o cliente que a requisitou
   def show_key_value(send_router, msg)
     if send_router.to_i == @id
-      puts msg
+      print "\n" + msg
     else
-      puts 'send back to: ' + send_router.to_s
+      print "\nsend back to: " + send_router.to_s
       send_msg(send_router, 2, '', msg)
     end
   end
