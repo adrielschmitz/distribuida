@@ -9,11 +9,11 @@ class RoutingTable
   end
 
   def foresee_router(index)
-    bigger = -1
+    lower = 4_611_686_018_427_387_902
     router = nil
     @table.each do |key, value|
-      if (value.to_i > bigger) && index.to_i <= value.to_i
-        bigger = value.to_i
+      if (value.to_i < lower) && index.to_i <= value.to_i
+        lower = value.to_i
         router = key
       end
     end

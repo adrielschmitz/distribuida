@@ -30,7 +30,11 @@ class Client
   end
 
   def send_msg(send_router, controller, key, value)
-    id = @routing_table.foresee_router(assemble_index(key).to_s)
+    id = if controller == 2
+           send_router.to_i
+         else
+           @routing_table.foresee_router(assemble_index(key).to_s)
+         end
     ip = @config.routers[id.to_s.to_i][0]
     port = @config.routers[id.to_s.to_i][1]
     TCPSocket.open(ip, port) do |server|
@@ -87,6 +91,8 @@ class Client
         show_hash
       when '4'
         @routing_table.print_table(@id)
+      when '5'
+        pry
       else
         puts 'Informe apenas uma das opções acima!'
       end
@@ -141,6 +147,7 @@ class Client
     if send_router.to_i == @id
       puts msg
     else
+      puts 'send back to: ' + send_router.to_s
       send_msg(send_router, 2, '', msg)
     end
   end
