@@ -192,6 +192,7 @@ module Router
       puts '[1] Escrever mensagem'
       puts '[2] Procurar chave'
       puts '[3] Mostar Hash'
+      puts '[4] Tabela de Roteamento'
       puts '[0] Sair'
       print '-> '
     end
