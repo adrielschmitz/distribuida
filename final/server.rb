@@ -5,6 +5,7 @@
 
 require 'socket'
 require './routing_table'
+require './package'
 
 module Server
   # Classe responsavel por enviar, reveber e reencaminhar as mensagens
@@ -20,11 +21,13 @@ module Server
       @thr_multicast.join
     end
 
-    def send_message(id, ip, port, hash)
+    def send_message(id, ip, port, type, message)
       TCPSocket.open(ip, port) do |server|
-        @routing_table.alive(id) if hash[:controller] == 1
+        @routing_table.alive(id) if type == 1
 
-        server.write [1].pack('L')
+        server.write(
+          Server::Package.pack(type, @id, id, message, @routing_table.table)
+        )
       end
     rescue Errno::ECONNREFUSED
       # puts "Impossível se conectar com o servidor! Server id: #{id} ip: #{ip} port: #{port}"
@@ -38,7 +41,7 @@ module Server
         TCPServer.open(ip, port) do |server|
           loop do
             con = server.accept
-            con.recv(1024).unpack('L')
+            Server::Package.unpack(con.recv(1024))
             con.close
           end
         end
@@ -50,7 +53,7 @@ module Server
         loop do
           @routing_table.connections.each do |connection|
             ip, port = @routing_table.find_router(connection)
-            send_message(connection, ip, port, controller: 1)
+            send_message(connection, ip, port, 1, '')
           end
           sleep(10)
         end

@@ -5,7 +5,7 @@ module Server
   class RoutingTable
     attr_reader :id, :table, :config, :connections
     def initialize(id)
-      @table = Hash.new { |hash, key| hash[key] = {} }
+      @table = {}
       @id = id
       read_config
     end
@@ -65,6 +65,7 @@ module Server
 
     def configure_table
       @config.routers.each do |key, _router|
+        @table[key.to_s.to_sym] = {}
         if key.to_s == @id.to_s
           @table[key.to_s.to_sym][:next_hop] = 0
           next
