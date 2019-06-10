@@ -10,11 +10,11 @@ require './package'
 module Server
   # Classe responsavel por enviar, reveber e reencaminhar as mensagens
   class Router
-    attr_reader :id, :routing_table
+    attr_reader :id, :routing_table, :package
     def initialize(id)
       @id = id
       @routing_table = Server::RoutingTable.new(id)
-
+      @package = Server::Package.new
       @thr_receive = receive_msg
       @thr_multicast = multicast
       @thr_receive.join
@@ -26,13 +26,12 @@ module Server
         @routing_table.alive(id) if type == 1
 
         server.write(
-          Server::Package.pack(type, @id, id, message, @routing_table.table)
+          package.pack(type, @id, id, message, @routing_table.table)
         )
       end
     rescue Errno::ECONNREFUSED
       # puts "Impossível se conectar com o servidor! Server id: #{id} ip: #{ip} port: #{port}"
       @routing_table.kill(id)
-      @routing_table.print_table
     end
 
     def receive_msg
@@ -41,10 +40,21 @@ module Server
         TCPServer.open(ip, port) do |server|
           loop do
             con = server.accept
-            Server::Package.unpack(con.recv(1024))
+            treat_package(con.recv(2048))
             con.close
           end
         end
+      end
+    end
+
+    def treat_package(pack)
+      hash = @package.unpack(pack)
+      if hash[:type].zero?
+        # Pacote de mensagem
+      elsif hash[:type] == 1
+        @routing_table.bellman_ford(hash[:sender], hash[:table])
+      elsif hash[:type] == 2
+        # Pacote de busca
       end
     end
 
@@ -55,6 +65,8 @@ module Server
             ip, port = @routing_table.find_router(connection)
             send_message(connection, ip, port, 1, '')
           end
+          # (system "clear")
+          @routing_table.print_table
           sleep(10)
         end
       end

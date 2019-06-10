@@ -5,7 +5,7 @@ module Server
   class RoutingTable
     attr_reader :id, :table, :config, :connections
     def initialize(id)
-      @table = {}
+      @table = Hash.new { |hash, key| hash[key] = {} }
       @id = id
       read_config
     end
@@ -35,7 +35,7 @@ module Server
       @table.each do |key, router|
         next if key.to_s == @id.to_s || router[:next_hop] == -1
 
-        puts "|       #{key}       |        #{router[:next_hop]}      |"
+        puts "|       #{key}       |        #{router[:next_hop]}      |     #{router[:distance]}     |"
       end
       puts '+-------------------------------+'
     end
@@ -48,6 +48,15 @@ module Server
     def find_next_hop(router_id)
       next_hop = @table[router_id.to_s.to_sym][:next_hop]
       find_router(next_hop)
+    end
+
+    def bellman_ford(id, table)
+      table.each do |key, router|
+        if @table[key.to_s.to_sym][:distance] > (router[:distance] + 1)
+          @table[key.to_s.to_sym][:next_hop] = id
+          @table[key.to_s.to_sym][:distance] = router[:distance] + 1
+        end
+      end
     end
 
     private
@@ -65,9 +74,9 @@ module Server
 
     def configure_table
       @config.routers.each do |key, _router|
-        @table[key.to_s.to_sym] = {}
         if key.to_s == @id.to_s
           @table[key.to_s.to_sym][:next_hop] = 0
+          @table[key.to_s.to_sym][:distance] = 0
           next
         end
         @table[key.to_s.to_sym][:next_hop] = -1
