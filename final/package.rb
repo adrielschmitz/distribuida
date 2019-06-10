@@ -1,7 +1,7 @@
 require 'json'
 
 module Server
-  # Classe responsavel por compactar e descompactar os pacotes
+  # Classe responsavel pelo controle dos pacotes
   class Package
     attr_accessor :package_counter
 

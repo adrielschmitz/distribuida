@@ -22,22 +22,28 @@ module Server
     end
 
     def kill(id)
-      @table[id.to_s.to_sym][:next_hop] = -1
-      @table[id.to_s.to_sym][:distance] = 4_611_686_018_427_387_902
+      @table.each do |key, router|
+        next if router[:next_hop] != id
+
+        @table[key.to_s.to_sym][:next_hop] = -1
+        @table[key.to_s.to_sym][:distance] = 4_611_686_018_427_387_902
+      end
     end
 
     def print_table
-      puts '+-------------------------------+'
-      puts "|       Routing Table[#{@id}]        |"
-      puts '+-------------------------------+'
-      puts '|   Routers     |   Next Jump   |'
-      puts '+-------------------------------+'
+      puts '+-----------------------------------------------+'
+      puts "|       Routing Table[#{@id}]                        |"
+      puts '+---------------+---------------+---------------+'
+      puts '|   Routers     |   Next Hop   |     Distance   |'
+      puts '+---------------+---------------+---------------+'
       @table.each do |key, router|
         next if key.to_s == @id.to_s || router[:next_hop] == -1
 
-        puts "|       #{key}       |        #{router[:next_hop]}      |     #{router[:distance]}     |"
+        print "|       #{key}       |"
+        print "       #{router[:next_hop]}       |"
+        puts  "       #{router[:distance]}       |"
       end
-      puts '+-------------------------------+'
+      puts '+---------------+---------------+---------------+'
     end
 
     def find_router(router_id)
@@ -52,9 +58,15 @@ module Server
 
     def bellman_ford(id, table)
       table.each do |key, router|
+        next if @connections.include? key.to_s.to_i
+
         if @table[key.to_s.to_sym][:distance] > (router[:distance] + 1)
-          @table[key.to_s.to_sym][:next_hop] = id
-          @table[key.to_s.to_sym][:distance] = router[:distance] + 1
+          set_value(key, id, router[:distance] + 1)
+          next
+        end
+
+        if @table[key.to_s.to_sym][:next_hop] == id && router[:next_hop] == -1
+          set_value(key, -1, 4_611_686_018_427_387_902)
         end
       end
     end
@@ -83,6 +95,11 @@ module Server
         @table[key.to_s.to_sym][:distance] = 4_611_686_018_427_387_902
         # Adicionar o tipo do roteador aqui
       end
+    end
+
+    def set_value(id, next_hop, distance)
+      @table[id.to_s.to_sym][:next_hop] = next_hop
+      @table[id.to_s.to_sym][:distance] = distance
     end
   end
 end

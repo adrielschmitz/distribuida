@@ -30,7 +30,6 @@ module Server
         )
       end
     rescue Errno::ECONNREFUSED
-      # puts "Impossível se conectar com o servidor! Server id: #{id} ip: #{ip} port: #{port}"
       @routing_table.kill(id)
     end
 
@@ -65,7 +64,7 @@ module Server
             ip, port = @routing_table.find_router(connection)
             send_message(connection, ip, port, 1, '')
           end
-          # (system "clear")
+          (system 'clear')
           @routing_table.print_table
           sleep(10)
         end
