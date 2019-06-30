@@ -1,4 +1,5 @@
 require './read_config'
+require 'pry'
 
 module Server
   # Classe responsavel pela tabela de roteamento
@@ -60,7 +61,12 @@ module Server
       table.each do |key, router|
         next if @connections.include? key.to_s.to_i
 
-        if @table[key.to_s.to_sym][:distance] > (router[:distance] + 1)
+        if @table[key.to_s.to_sym][:count] < router[:count]
+          @table[key.to_s.to_sym][:count] = router[:count]
+        end
+
+        if @table[key.to_s.to_sym][:distance] > (router[:distance] + 1) &&
+          (@table[router[:next_hop].to_s.to_sym][:next_hop] != -1 || router[:next_hop] == key.to_s.to_i)
           set_value(key, id, router[:distance] + 1)
           next
         end
@@ -89,10 +95,14 @@ module Server
         if key.to_s == @id.to_s
           @table[key.to_s.to_sym][:next_hop] = 0
           @table[key.to_s.to_sym][:distance] = 0
+          @table[key.to_s.to_sym][:type] = -1
+          @table[key.to_s.to_sym][:count] = 0
           next
         end
         @table[key.to_s.to_sym][:next_hop] = -1
         @table[key.to_s.to_sym][:distance] = 4_611_686_018_427_387_902
+        @table[key.to_s.to_sym][:type] = -1
+        @table[key.to_s.to_sym][:count] = 0
         # Adicionar o tipo do roteador aqui
       end
     end

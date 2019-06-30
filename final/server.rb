@@ -21,12 +21,12 @@ module Server
       @thr_multicast.join
     end
 
-    def send_message(id, ip, port, type, message)
+    def send_message(id, ip, port, message_type, message)
       TCPSocket.open(ip, port) do |server|
-        @routing_table.alive(id) if type == 1
+        @routing_table.alive(id) if message_type == 1
 
         server.write(
-          package.pack(type, @id, id, message, @routing_table.table)
+          package.pack(message_type, @id, id, message, @routing_table.table)
         )
       end
     rescue Errno::ECONNREFUSED
@@ -46,13 +46,13 @@ module Server
       end
     end
 
-    def treat_package(pack)
-      hash = @package.unpack(pack)
-      if hash[:type].zero?
+    def treat_package(package_recived)
+      pack = @package.unpack(package_recived)
+      if pack[:message_type].zero?
         # Pacote de mensagem
-      elsif hash[:type] == 1
-        @routing_table.bellman_ford(hash[:sender], hash[:table])
-      elsif hash[:type] == 2
+      elsif pack[:message_type] == 1
+        @routing_table.bellman_ford(pack[:sender], pack[:hash])
+      elsif pack[:message_type] == 2
         # Pacote de busca
       end
     end
@@ -66,7 +66,7 @@ module Server
           end
           (system 'clear')
           @routing_table.print_table
-          sleep(10)
+          sleep(3)
         end
       end
     end

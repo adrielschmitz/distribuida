@@ -3,33 +3,37 @@ require 'json'
 module Server
   # Classe responsavel pelo controle dos pacotes
   class Package
-    attr_accessor :package_counter
+    attr_accessor :pack_id, :counter
 
     def initialize
-      @package_counter = 0
+      @pack_id = 0
+      @counter = 0
     end
 
-    def pack(type, sender, reciver, message, table)
-      @package_counter += 1
+    def pack(type, sender, reciver, message, hash)
+      @pack_id += 1
+      @counter += 1 if type.zero?
       [
         type,
-        @package_counter,
+        @pack_id,
+        @counter,
         sender,
         reciver,
         message.ljust(50),
-        table.to_json.ljust(300)
-      ].pack('LLLLA50A300')
+        hash.to_json.ljust(400)
+      ].pack('LLLLLA50A400')
     end
 
     def unpack(package)
-      pack = package.unpack('LLLLA50A300')
+      pack = package.unpack('LLLLLA50A400')
       {
-        type: pack[0],
-        conter: pack[1],
-        sender: pack[2],
-        reciver: pack[3],
-        message: pack[4],
-        table: JSON.parse(pack[5], symbolize_names: true)
+        message_type: pack[0],
+        pack_id: pack[1],
+        counter: pack[2],
+        sender: pack[3],
+        reciver: pack[4],
+        message: pack[5],
+        hash: JSON.parse(pack[6], symbolize_names: true)
       }
     end
   end
