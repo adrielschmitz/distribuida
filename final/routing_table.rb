@@ -32,19 +32,21 @@ module Server
     end
 
     def print_table
-      puts '+-----------------------------------------------+'
-      puts "|       Routing Table[#{@id}]                        |"
-      puts '+---------------+---------------+---------------+'
-      puts '|   Routers     |   Next Hop   |     Distance   |'
-      puts '+---------------+---------------+---------------+'
+      puts '+-----------------------------------------------------------+'
+      puts "|                      Routing Table[#{@id}]                     |"
+      puts '+-----------+-----------+-----------+-----------+-----------+'
+      puts '|  Routers  | Next Hop  | Distance  |   Type    |   Count   |'
+      puts '+-----------+-----------+-----------+-----------+-----------+'
       @table.each do |key, router|
         next if key.to_s == @id.to_s || router[:next_hop] == -1
 
-        print "|       #{key}       |"
-        print "       #{router[:next_hop]}       |"
-        puts  "       #{router[:distance]}       |"
+        print "|#{key.to_s.center(11)}|"
+        print "#{router[:next_hop].to_s.center(11)}|"
+        print "#{router[:distance].to_s.center(11)}|"
+        print "#{router[:type].to_s.center(11)}|"
+        puts  "#{router[:count].to_s.center(11)}|"
       end
-      puts '+---------------+---------------+---------------+'
+      puts '+-----------+-----------+-----------+-----------+-----------+'
     end
 
     def find_router(router_id)
@@ -66,7 +68,8 @@ module Server
         end
 
         if @table[key.to_s.to_sym][:distance] > (router[:distance] + 1) &&
-          (@table[router[:next_hop].to_s.to_sym][:next_hop] != -1 || router[:next_hop] == key.to_s.to_i)
+           (@table[router[:next_hop].to_s.to_sym][:next_hop] != -1 ||
+            router[:next_hop] == key.to_s.to_i)
           set_value(key, id, router[:distance] + 1)
           next
         end
