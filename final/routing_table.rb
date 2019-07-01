@@ -30,6 +30,7 @@ module Server
         @table[key.to_s.to_sym][:next_hop] = -1
         @table[key.to_s.to_sym][:distance] = 4_611_686_018_427_387_902
         @table[key.to_s.to_sym][:type] = -1
+        @table[key.to_s.to_sym][:captain] = 0
         killed = true
       end
       killed
@@ -37,18 +38,19 @@ module Server
 
     def print_table
       puts '+-----------------------------------------------------------+'
-      puts "|                      Routing Table[#{@id}]                     |"
+      puts "|                 Routing Table[#{@id}]      #{@table[id.to_s.to_sym][:type]}               |"
       puts '+-----------+-----------+-----------+-----------+-----------+'
       puts '|  Routers  | Next Hop  | Distance  |   Type    |   Count   |'
       puts '+-----------+-----------+-----------+-----------+-----------+'
       @table.each do |key, router|
-        next if key.to_s == @id.to_s || router[:next_hop] == -1
+        # next if key.to_s == @id.to_s || router[:next_hop] == -1
 
         print "|#{key.to_s.center(11)}|"
         print "#{router[:next_hop].to_s.center(11)}|"
         print "#{router[:distance].to_s.center(11)}|"
         print "#{router[:type].to_s.center(11)}|"
-        puts  "#{router[:count].to_s.center(11)}|"
+        print "#{router[:count].to_s.center(11)}|"
+        puts  "#{router[:captain].to_s.center(2)}|"
       end
       puts '+-----------+-----------+-----------+-----------+-----------+'
     end
@@ -64,13 +66,17 @@ module Server
     end
 
     def bellman_ford(id, table)
+      puts 'oi'
       table.each do |key, router|
-        @table[key.to_s.to_sym][:type] = router[:type] if router[:type] != -1 && router[:next_hop] != @id
-        next if @connections.include? key.to_s.to_i
-
         if @table[key.to_s.to_sym][:count] < router[:count]
           @table[key.to_s.to_sym][:count] = router[:count]
         end
+        if @table[key.to_s.to_sym][:type] == -1 || @table[id.to_s.to_sym][:captain] == 1
+          @table[key.to_s.to_sym][:type] = router[:type]
+        end
+        @table[key.to_s.to_sym][:captain] = router[:captain] if key.to_s.to_i != @id
+
+        next if @connections.include? key.to_s.to_i
 
         if @table[key.to_s.to_sym][:distance] > (router[:distance] + 1) &&
            (@table[router[:next_hop].to_s.to_sym][:next_hop] != -1 ||
@@ -105,14 +111,16 @@ module Server
         if key.to_s == @id.to_s
           @table[key.to_s.to_sym][:next_hop] = @id
           @table[key.to_s.to_sym][:distance] = 0
-          @table[key.to_s.to_sym][:type] = @id
-          @table[key.to_s.to_sym][:count] = 0
+          @table[key.to_s.to_sym][:type] = -1
+          @table[key.to_s.to_sym][:count] = @id
+          @table[key.to_s.to_sym][:captain] = 0
           next
         end
         @table[key.to_s.to_sym][:next_hop] = -1
         @table[key.to_s.to_sym][:distance] = 4_611_686_018_427_387_902
         @table[key.to_s.to_sym][:type] = -1
         @table[key.to_s.to_sym][:count] = 0
+        @table[key.to_s.to_sym][:captain] = 0
       end
     end
 

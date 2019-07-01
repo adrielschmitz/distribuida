@@ -14,11 +14,11 @@ module Server
       @pack_id += 1
       @counter += 1 if type.zero?
       [
-        type,
-        @pack_id,
-        @counter,
-        sender,
-        reciver,
+        type.to_i,
+        @pack_id.to_s.to_i,
+        @counter.to_s.to_i,
+        sender.to_s.to_i,
+        reciver.to_s.to_i,
         message.ljust(50),
         hash.to_json.ljust(400)
       ].pack('LLLLLA50A400')
