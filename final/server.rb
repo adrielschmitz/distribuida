@@ -21,16 +21,16 @@ module Server
       @thr_multicast.join
     end
 
-    def send_message(id, ip, port, message_type, message)
+    def send_message(id, ip, port, message_type, message, hash)
       TCPSocket.open(ip, port) do |server|
         @routing_table.alive(id) if message_type == 1
 
         server.write(
-          package.pack(message_type, @id, id, message, @routing_table.table)
+          package.pack(message_type, @id, id, message, hash)
         )
       end
     rescue Errno::ECONNREFUSED
-      @routing_table.kill(id)
+      election(id) if @routing_table.kill(id)
     end
 
     def receive_msg
@@ -53,22 +53,49 @@ module Server
       elsif pack[:message_type] == 1
         @routing_table.bellman_ford(pack[:sender], pack[:hash])
       elsif pack[:message_type] == 2
-        # Pacote de busca
+        # Eleição iniciada
       end
     end
 
     def multicast
       Thread.new do
         loop do
-          @routing_table.connections.each do |connection|
-            ip, port = @routing_table.find_router(connection)
-            send_message(connection, ip, port, 1, '')
+          @routing_table.connections.each do |router_id|
+            ip, port = @routing_table.find_router(router_id)
+            send_message(router_id, ip, port, 1, '', @routing_table.table)
           end
           (system 'clear')
           @routing_table.print_table
           sleep(3)
         end
       end
+    end
+
+    def start_election(id)
+      Thread.new do
+        @routing_table.table.each do |key, router|
+          next if router[:next_hop] == -1 && key.to_s.to_i == id.to_i
+
+          ip, port = find_router(key.to_s.to_i)
+          send_message(connection, ip, port, 2, '', @routing_table.table)
+        end
+      end
+    end
+
+    def election(id)
+      table = {}
+      @routing_table.table.each do |k, v|
+        table[k] = v if v[:next_hop] != -1 && k.to_s != id.to_s
+      end
+
+      table = table.group_by { |_, value| value[:type] }
+
+      lowersts = []
+      table.each do |_, type|
+        table_ordered = type.sort_by { |_, router| router[:count] }
+        lowersts << table_ordered.first if table_ordered.size > 1
+      end
+      puts "L: #{lowersts}"
     end
   end
 end
