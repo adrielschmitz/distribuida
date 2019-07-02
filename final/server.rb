@@ -6,19 +6,23 @@
 require 'socket'
 require './routing_table'
 require './package'
+require './queue'
 
 module Server
   # Classe responsavel por enviar, reveber e reencaminhar as mensagens
   class Router
-    attr_reader :id, :routing_table, :package
+    attr_reader :id, :routing_table, :package, :queue
     def initialize(id)
       @id = id
       @routing_table = Server::RoutingTable.new(id)
       @package = Server::Package.new
+      @queue = Server::Queue.new(@id)
       @thr_receive = receive_msg
       @thr_multicast = multicast
+      @thr_queue = wating_queue
       @thr_receive.join
       @thr_multicast.join
+      @thr_queue.join
     end
 
     def send_message(id, ip, port, message_type, message, hash)
@@ -26,11 +30,11 @@ module Server
         @routing_table.alive(id) if message_type == 1
 
         server.write(
-          package.pack(message_type, @id, id, message, hash)
+          @package.pack(message_type, @id, id, message, hash)
         )
       end
     rescue Errno::ECONNREFUSED
-      election(id) if @routing_table.kill(id)
+      @routing_table.kill(id)
     end
 
     def receive_msg
@@ -48,13 +52,56 @@ module Server
 
     def treat_package(package_recived)
       pack = @package.unpack(package_recived)
+      return resend(pack, package_recived) if pack[:reciver].to_s != @id.to_s
+
       if pack[:message_type].zero?
-        # Pacote de mensagem
+        @queue.add(pack)
+        show_data
       elsif pack[:message_type] == 1
         @routing_table.bellman_ford(pack[:sender], pack[:hash])
-      elsif pack[:message_type] == 2
-        # Eleição iniciada
       end
+    end
+
+    def wating_queue
+      Thread.new do
+        loop do
+          sleep(5)
+          next if @queue.empty?
+
+          pack = @queue.first
+          @queue.pop
+          send_to_client(pack, true)
+        end
+      end
+    end
+
+    def send_to_client(pack, success)
+      TCPSocket.open('127.0.0.1', 8010) do |server|
+        server.write(
+          @package.pack(
+            pack[:message_type],
+            @id, pack[:sender],
+            pack[:message],
+            { success: success }
+          )
+        )
+      end
+      @package.update_log(pack, id, true)
+    rescue Errno::ECONNREFUSED
+      @queue.add(pack)
+      @package.update_log(pack, id, false)
+    end
+
+    def resend(pack, package_recived)
+      ip, port = @routing_table.find_next_hop(pack[:reciver])
+      raise Errno::ECONNREFUSED if ip.nil? || port.nil?
+
+      TCPSocket.open(ip, port) do |server|
+        server.write(package_recived)
+      end
+    rescue Errno::ECONNREFUSED
+      send_to_client(pack, false)
+      @package.update_log(pack, id, false)
     end
 
     def multicast
@@ -64,38 +111,16 @@ module Server
             ip, port = @routing_table.find_router(router_id)
             send_message(router_id, ip, port, 1, '', @routing_table.table)
           end
-          (system 'clear')
-          @routing_table.print_table
+          show_data
           sleep(3)
         end
       end
     end
 
-    def start_election(id)
-      Thread.new do
-        @routing_table.table.each do |key, router|
-          next if router[:next_hop] == -1 && key.to_s.to_i == id.to_i
-
-          ip, port = find_router(key.to_s.to_i)
-          send_message(connection, ip, port, 2, '', @routing_table.table)
-        end
-      end
-    end
-
-    def election(id)
-      table = {}
-      @routing_table.table.each do |k, v|
-        table[k] = v if v[:next_hop] != -1 && k.to_s != id.to_s
-      end
-
-      table = table.group_by { |_, value| value[:type] }
-
-      lowersts = []
-      table.each do |_, type|
-        table_ordered = type.sort_by { |_, router| router[:count] }
-        lowersts << table_ordered.first if table_ordered.size > 1
-      end
-      puts "L: #{lowersts}"
+    def show_data
+      (system 'clear')
+      @routing_table.print_table
+      @queue.print
     end
   end
 end

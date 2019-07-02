@@ -59,7 +59,7 @@ module Server
     end
 
     def find_next_hop(router_id)
-      next_hop = @table[router_id.to_s.to_sym][:next_hop]
+      next_hop = @table[router_id.to_s.to_sym][:type]
       find_router(next_hop)
     end
 
