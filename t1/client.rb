@@ -1,27 +1,126 @@
+# Trabalho parcial sobre modelo de comunicação
+# Alunos: Adriel Schmitz, Leonardo Werlang
+# Professor: Braulio Adriano de Melo
+# Disciplina: Computação Distribuída
+
 require 'socket'
-require 'io/console'
+require './read_config'
 
-PORT        = 3001
-HOSTNAME    = 'localhost'.freeze
-MSG_LENGHT  = 1024
+class Client
+  def initialize(server, id)
+    @server = server
+    @id = id
 
-client = UDPSocket.open
-client.connect(HOSTNAME, PORT)
+    print 'Inicializando ..'
+    @thr_recive   = recive_msg
+    @thr_send     = send_msg
+    @thr_input    = input
 
-loop do
-  message = ''
-  loop do
-    puts 'Digite sua mensagem (press [0] para parar):'
+    @entrada = []
+    @saida = []
 
-    $stdin.iflush
-    message = gets
-    break if message.length <= MSG_LENGHT
+    @thr_recive.join
+    @thr_send.join
+    @thr_input.join
   end
 
-  # O argumento 0 é uma flag que pode ser usada com uma combinação T> de constantes.
-  client.sendmsg(message, 0)
-  break if '0'.include? message.chomp
+  def new_socket
+    r = ReadConfig.new
+    config = if @id.zero?
+               r.get_config(1)
+             else
+               r.get_config(0)
+             end
+    TCPSocket.new(config[0], config[1])
+    rescue Errno::ECONNREFUSED
+      nil
+  end
+
+  def send_msg
+    print '.'
+    @thr0 = Thread.new do
+      loop do
+        if @saida.nil? || @saida.empty?
+          sleep 2
+          next
+        end
+        socket = nil
+        socket = new_socket while socket.nil?
+        socket.puts @saida.slice!(0)
+        socket.close
+      end
+    end
+  end
+
+  def recive_msg
+    print '.'
+    @thr1 = Thread.new do
+      loop do
+        conn = @server.accept
+        Thread.start(conn) do |c|
+          @entrada << c.gets.chomp
+        end
+      end
+    end
+  end
+
+  def input
+    puts ''
+    @thr2 = Thread.new do
+      loop do
+        menu
+        op = $stdin.gets.chomp
+        case op
+        when '0'
+          kill_threads
+        when '1'
+          puts 'Informe a mensagem:'
+          @saida << $stdin.gets.chomp
+        when '2'
+          show
+        else
+          puts 'Informe apenas uma das opções acima!'
+        end
+      end
+    end
+  end
+
+  def menu
+    puts "Cliente [#{@id}]"
+    puts '-------------- OPÇÕES --------------'
+    puts '[1] Escrever mensagem'
+    puts '[2] Listar mensagens'
+    puts '[0] Sair'
+    print '-> '
+  end
+
+  def show
+    puts '----------------------- MENSAGENS -----------------------'
+    puts @entrada
+    puts '---------------------------------------------------------'
+  end
+
+  def kill_threads
+    Thread.kill(@thr0)
+    Thread.kill(@thr1)
+    Thread.kill(@thr2)
+  end
 end
 
-puts 'Conexão encerrada!'
-client.close
+if ARGV.length != 1
+  puts 'Informe o ID do roteador!'
+  exit
+end
+
+# Lê o aquivo de configuração
+read = ReadConfig.new
+
+# Lê o argumento informado pelo usuário
+id = ARGV[0].to_i
+config = read.get_config(id)
+
+# Inicia um servidor com os paramentros de ip e porta
+server = TCPServer.open(config[0], config[1])
+
+#Instancia o cliente com seu id
+Client.new(server, id)

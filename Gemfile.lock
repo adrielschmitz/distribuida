@@ -1,0 +1,15 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    tty-cursor (0.6.1)
+    tty-spinner (0.9.0)
+      tty-cursor (~> 0.6.0)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  tty-spinner
+
+BUNDLED WITH
+   1.17.3
